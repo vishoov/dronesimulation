@@ -1,68 +1,90 @@
 <div class="heading">
   <h1>Drone Simulator</h1>  
 </div>
+
 <div width="100%">
-  
   <section class="sec-a">
     <form [formGroup]="latLngForm" (ngSubmit)="onSimulate()">
-
       <div class="sec-a-1">
+        <div class="alignment">
         <mat-form-field class="cstm-input-01">
-          <mat-label>Latitude</mat-label>
-          <input matInput type="number" formControlName="latitude">
+          <mat-label>Source Latitude</mat-label>
+          <input matInput type="number" formControlName="latitudeA">
         </mat-form-field>
 
         <mat-form-field class="cstm-input-01">
-          <mat-label>Longitude</mat-label>
-          <input matInput type="number" formControlName="longitude">
+          <mat-label>Source Longitude</mat-label>
+          <input matInput type="number" formControlName="longitudeA">
+        </mat-form-field>
+      </div>
+      <div class="alignment">
+        <mat-form-field class="cstm-input-01">
+          <mat-label>Destination Latitude</mat-label>
+          <input matInput type="number" formControlName="latitudeB">
         </mat-form-field>
 
         <mat-form-field class="cstm-input-01">
-          <mat-label>Time (sec.)</mat-label>
-          <input matInput type="number" formControlName="time">
+          <mat-label>Destination Longitude</mat-label>
+          <input matInput type="number" formControlName="longitudeB">
         </mat-form-field>
 
-        <button mat-fab class="simulate-btn" extended color="primary" type="submit" [disabled]="!latLngForm.valid">
-          Simulate
-        </button>
+       
+      </div>
+      <div class="alignment">
+      <mat-form-field class="cstm-input-01">
+        <mat-label>Time (sec.)</mat-label>
+        <input matInput type="number" formControlName="time">
+      </mat-form-field>
+      <button mat-fab class="simulate-btn" extended color="primary" type="submit" [disabled]="!latLngForm.valid">
+        Simulate
+      </button>
+    </div>
       </div>
 
       <div class="sec-a-2">
         <button mat-raised-button color="primary" 
-          [disabled]="!latLngForm.disabled || simulatePaused || progressCount >=100"
+          [disabled]="!latLngForm.disabled || simulatePaused || progressCount >= 100"
           (click)="onPause()">Pause
         </button>
         <button mat-raised-button color="primary" 
-          [disabled]="!latLngForm.disabled || !simulatePaused" (click)="onResume()"> Resume
+          [disabled]="!latLngForm.disabled || !simulatePaused" 
+          (click)="onResume()">Resume
         </button>
-        <button mat-raised-button color="" 
-          [disabled]="!latLngForm.disabled"(click)="onReset()">Reset
+        <button mat-raised-button color="primary" 
+          [disabled]="!latLngForm.disabled" 
+          (click)="onReset()">Reset
         </button>
       </div>
-
     </form>
   </section>
 
   <section class="sec-gmap">
-
-   <div class="progress-grp">
-  <mat-progress-bar mode="determinate"
-                    [value]="progressCount"
-                    class="cstm-progress-bar"
-                    (click)="onSeek($event)">
-  </mat-progress-bar>
-  <span class="progress-count">{{progressCount}}%</span>
-</div>
-
-    <div *ngIf="apiLoaded | async">
-      <google-map width="90%"  [options]="mainOptions"
-        (mapClick)="addMarker($event)">
-          <map-marker *ngFor="let markerPosition of markerOptions"
-            [options]="markerPosition">
-          </map-marker>
-          <map-polyline [path]="polyVertices" [options]="polylineOptions"></map-polyline>
-      </google-map>
+    <div class="progress-grp">
+      <mat-progress-bar mode="determinate"
+                        [value]="progressCount"
+                        class="cstm-progress-bar"
+                        (click)="onSeek($event)">
+      </mat-progress-bar>
+      <span class="progress-count">{{progressCount}}%</span>
     </div>
 
+    <div *ngIf="apiLoaded | async">
+      <google-map width="90%" [options]="mainOptions"
+        >
+        <map-marker *ngFor="let markerPosition of markerOptions"
+          [options]="markerPosition">
+        </map-marker>
+        <map-polyline [path]="polyVertices" [options]="polylineOptions"></map-polyline>
+      </google-map>
+    </div>
   </section>
+
+ 
 </div>
+<section class="sec-metrics">
+  <div class="distance-container">
+    <h2>Distance Covered</h2>
+    <div class="distance-value" id="distance-value">0.00</div>
+    <div class="distance-units">km</div>
+  </div>
+</section>

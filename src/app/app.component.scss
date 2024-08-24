@@ -16,7 +16,20 @@
     padding-bottom: 2%;
 
     .sec-a-1 {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        .alignment{
+            
+            display: flex;
+            justify-content: center;
+            flex-direction: row;
+        }
+        
+
         .cstm-input-01 {
+           
+           
             margin-left: 2%;
             @media (max-width: 600px) {
                 width: 120px;
@@ -25,9 +38,13 @@
         .simulate-btn {
             margin-bottom: 2%;
             margin-left: 4%;
+            width: 10%;
         }
     }
     .sec-a-2 {
+        display: flex;
+        justify-content: center;
+        align-items: center;
         button {
             margin-left: 3%;
         }
@@ -49,4 +66,46 @@
             height: 15px;
         }
     }
+
+
+  
 }
+.sec-metrics{
+
+    display: flex;
+    justify-content: center;
+    
+
+.distance-container {
+    background-color: rgb(215, 215, 215); /* Light grey background */
+    border-radius: 8px; /* Rounded corners */
+    padding: 16px; /* Padding around the content */
+    margin: 20px 0; /* Margin around the container */
+    border: 2px solid #007bff; /* Blue border for emphasis */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    max-width: 300px; /* Maximum width of the container */
+    text-align: center; /* Center-align text */
+  }
+  
+  /* Heading style */
+  .distance-container h2 {
+    font-size: 1.5rem; /* Larger font size for the heading */
+    color: #007bff; /* Blue color for the heading */
+    margin-bottom: 10px; /* Margin below the heading */
+  }
+  
+  /* Distance value style */
+  .distance-container .distance-value {
+    font-size: 2rem; /* Larger font size for the value */
+    font-weight: bold; /* Bold text for emphasis */
+    color: #333; /* Dark text color */
+  }
+  
+  /* Units style */
+  .distance-container .distance-units {
+    font-size: 1rem; /* Smaller font size for the units */
+    color: #666; /* Grey color for the units */
+  }
+
+}
+
