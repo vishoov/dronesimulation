@@ -1,7 +1,7 @@
 # Drone Simulator
 
 #Deployed link
-https://github.com/vishoov/dronesimulation
+https://dronesimulation-seven.vercel.app/
 
 
 **Project Summary :**
