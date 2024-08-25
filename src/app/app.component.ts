@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, interval, Subscription } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { environment } from '../environments/environment';
 
 @Component({
@@ -11,9 +11,11 @@ import { environment } from '../environments/environment';
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit, OnDestroy {
-totalDistance: string|number = 0;
-averageSpeed: string|number = 0;
-elapsedTime: string|number = 0;
+  destinationArray: FormArray = this.formBuilder.array([]);
+
+  totalDistance: number = 0;
+  averageSpeed: number = 0;
+  elapsedTime: number = 0;
 
   title: string = 'Drone Simulation';
   G_API_KEY: string = environment.G_API_KEY;
@@ -26,18 +28,20 @@ elapsedTime: string|number = 0;
 
   simulatePaused: boolean = false;
   progressCount: number = 0;
-  numSteps: number = 100; // Number of intermediate positions
+  numSteps: number = 100; // Number of intermediate positions per segment
   time: number = 0; // in milliseconds
+  totalProgress: number = 0;
+
 
   positionA: google.maps.LatLngLiteral = {
     lat: 28.522308592619723,
     lng: 77.39657243970184,
   };
 
-  positionB: google.maps.LatLngLiteral = {
-    lat: 28.52387343192279,
-    lng: 77.39296719927432,
-  };
+  destinations: google.maps.LatLngLiteral[] = [];
+  currentSegment: number = 0;
+  segmentProgress: number = 0;
+  totalSegments: number = 0;
 
   mainOptions: google.maps.MapOptions = {
     center: this.positionA,
@@ -63,113 +67,113 @@ elapsedTime: string|number = 0;
     this.latLngForm = this.formBuilder.group({
       latitudeA: [null, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
       longitudeA: [null, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
-      latitudeB: [null, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
-      longitudeB: [null, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
-      time: [null, [Validators.required, Validators.min(0)]],
+      destinationArray: this.formBuilder.array([])
     });
+
+    this.destinationArray = this.latLngForm.get('destinationArray') as FormArray;
   }
 
   ngOnInit() {
-    this.initializeMarkers();
-  }
+    this.latLngForm = this.formBuilder.group({
+      latitudeA: [null, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
+      longitudeA: [null, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
+      destinationArray: this.formBuilder.array([])
+    });
 
+    this.destinationArray = this.latLngForm.get('destinationArray') as FormArray;
+    this.addDestination(); // Add initial destination
+  }
+  
+  createDestination(): FormGroup {
+    return this.formBuilder.group({
+      latitudeB: [null, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
+      longitudeB: [null, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
+      time: [null, [Validators.required, Validators.min(0)]]
+    });
+  }
+  
   ngOnDestroy() {
     this.droneUpdateSubscription.unsubscribe();
   }
+  addDestination() {
+    this.destinationArray.push(this.createDestination());
+  }
 
-  initializeMarkers() {
-    this.markerOptions = [{
-      draggable: false,
-      label: 'S',
-      position: this.positionA,
-    }];
+  removeDestination(index: number) {
+    this.destinationArray.removeAt(index);
   }
 
   onSimulate() {
     if (!this.latLngForm.valid) {
-      console.error('Invalid form values.');
+      console.error('Please dont leave form unfilled.');
       return;
     }
+
+    const { latitudeA, longitudeA } = this.latLngForm.value;
+    this.positionA = { lat: Number(latitudeA), lng: Number(longitudeA) };
+
+    this.destinations = [this.positionA];
+    let totalTime = 0;
+
+    this.destinationArray.controls.forEach((control: AbstractControl) => {
+      const dest = control.value;
+      this.destinations.push({ lat: Number(dest.latitudeB), lng: Number(dest.longitudeB) });
+      totalTime += Number(dest.time);
+    });
+
+    this.totalSegments = this.destinations.length - 1;
+    this.polyVertices = this.destinations;
+    this.updateMarkers();
+    this.time = (totalTime * 1000) / (this.numSteps * this.totalSegments);
+
   
-    const { latitudeA, longitudeA, latitudeB, longitudeB, time } = this.latLngForm.value;
-  
-    const distance = this.calculateDistance(); // in kilometers
-    const totaltime = this.latLngForm.get('time')?.value; // in seconds
-    const averageSpeed = totaltime > 0 ? (distance / (totaltime / 3600)) : 0; // km/h
-  
-    this.positionA = { lat: +latitudeA, lng: +longitudeA };
-    this.positionB = { lat: +latitudeB, lng: +longitudeB };
-    this.time = (totaltime * 1000) / this.numSteps;
-  
+    this.elapsedTime = 0;
+
     this.latLngForm.disable();
-    this.polyVertices = [this.positionA, this.positionB];
-    this.updateMarker(this.positionB.lat, this.positionB.lng, 1, false, 'E');
     this.startDroneUpdates();
+  }
+
+  updateMarkers() {
+    this.markerOptions = this.destinations.map((pos, index) => ({
+      position: pos,
+      label: index === 0 ? 'S' : (index === this.destinations.length - 1 ? 'E' : String(index)),
+      draggable: false
+    }));
   }
   
 
   startDroneUpdates() {
     this.droneUpdateSubscription.unsubscribe();
+    this.progressCount = 0;
+    this.currentSegment = 0;
+    this.segmentProgress = 0;
+  
     this.droneUpdateSubscription = interval(this.time).subscribe(() => {
-      if (this.progressCount < this.numSteps) {
-        this.updateDronePosition(this.progressCount / this.numSteps);
+      if (this.currentSegment < this.totalSegments) {
+        this.updateDronePosition();
+        this.segmentProgress++;
         this.progressCount++;
+        this.elapsedTime += this.time/1000; // Convert milliseconds to seconds
+  
+        if (this.segmentProgress >= this.numSteps) {
+          this.currentSegment++;
+          this.segmentProgress = 0;
+        }
       } else {
         this.droneUpdateSubscription.unsubscribe();
       }
     });
-
-    
-  }
-
-  calculateDistance(): number {
-    // Extract latitude and longitude from the form
-    const lat1 = this.latLngForm.get('latitudeA')?.value;
-    const lon1 = this.latLngForm.get('longitudeA')?.value;
-    const lat2 = this.latLngForm.get('latitudeB')?.value;
-    const lon2 = this.latLngForm.get('longitudeB')?.value;
-  
-    if (lat1 === null || lon1 === null || lat2 === null || lon2 === null) {
-      console.error('Form values are not available.');
-      return 0;
-    }
-  
-    // Convert degrees to radians
-    const toRadians = (degrees: number) => degrees * (Math.PI / 180);
-  
-    // Radius of the Earth in kilometers
-    const R = 6371;
-  
-    // Calculate differences
-    const dLat = toRadians(lat2 - lat1);
-    const dLon = toRadians(lon2 - lon1);
-  
-    // Apply Haversine formula
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  
-    // Distance in kilometers
-    return R * c;
   }
   
-  
 
-  onSeek(event: MouseEvent): void {
-    const progressBar = event.currentTarget as HTMLElement;
-    const clickX = event.offsetX;
-    const totalWidth = progressBar.clientWidth;
-    const clickedPercentage = Math.max(0, Math.min(100, (clickX / totalWidth) * 100));
-    this.progressCount = Math.round(clickedPercentage);
-    this.updateDronePosition(this.progressCount / 100);
-  }
+  updateDronePosition(): void {
+    const startPos = this.destinations[this.currentSegment];
+    const endPos = this.destinations[this.currentSegment + 1];
+    const fraction = this.segmentProgress / this.numSteps;
 
-  updateDronePosition(fraction: number): void {
     const position: google.maps.LatLngLiteral = {
-      lat: this.positionA.lat + fraction * (this.positionB.lat - this.positionA.lat),
-      lng: this.positionA.lng + fraction * (this.positionB.lng - this.positionA.lng),
+      lat: startPos.lat + fraction * (endPos.lat - startPos.lat),
+      lng: startPos.lng + fraction * (endPos.lng - startPos.lng),
     };
 
     this.markerOptions[0] = {
@@ -178,62 +182,97 @@ elapsedTime: string|number = 0;
       draggable: false,
     };
 
-    this.currentPolylinePath = [this.positionA, position];
-   
+    this.currentPolylinePath = [startPos, position];
     this.logDistance(position);
+
+    const totalTime = this.destinationArray.controls.reduce((acc, control) => acc + Number(control.get('time')?.value || 0), 0);
+    const elapsedTime = this.destinationArray.controls.slice(0, this.currentSegment).reduce((acc, control) => acc + Number(control.get('time')?.value || 0), 0);
+    const currentSegmentTime = Number(this.destinationArray.at(this.currentSegment).get('time')?.value || 0);
+    this.totalProgress = ((elapsedTime + (currentSegmentTime * fraction)) / totalTime) * 100;
+    
   }
+
+
+
+
+
 
 
   logDistance(position: google.maps.LatLngLiteral) {
-    const start = new google.maps.LatLng(this.positionA.lat, this.positionA.lng);
+    // Initialize total distance to 0
+    let totalDistance = 0;
+  
+    // Convert position to LatLng object
     const current = new google.maps.LatLng(position.lat, position.lng);
-    const distanceInMeters = google.maps.geometry.spherical.computeDistanceBetween(start, current);
-    const distanceInKilometers = distanceInMeters / 1000; // Convert meters to kilometers
-    
-   
-    
-    // Update the distance in the HTML
-    const distanceValue = document.getElementById('distance-value');
-    if (distanceValue) {
-        distanceValue.textContent = distanceInKilometers.toFixed(2);
+  
+    // Iterate over all segments to calculate the distance traveled
+    for (let i = 0; i < this.destinations.length - 1; i++) {
+      const start = new google.maps.LatLng(this.destinations[i].lat, this.destinations[i].lng);
+      const end = new google.maps.LatLng(this.destinations[i + 1].lat, this.destinations[i + 1].lng);
+  
+      // Calculate the distance from the start of the current segment to the current position
+      if (i === this.currentSegment) {
+        // Calculate the distance from start to current position in this segment
+        const distanceToCurrent = google.maps.geometry.spherical.computeDistanceBetween(start, current);
+        totalDistance += distanceToCurrent;
+        break;
+      } else {
+        // Calculate the distance for the whole segment
+        const distanceSegment = google.maps.geometry.spherical.computeDistanceBetween(start, end);
+        totalDistance += distanceSegment;
+      }
     }
-}
-
-calculateDirection(): string {
-  const lat1 = this.positionA.lat;
-  const lon1 = this.positionA.lng;
-  const lat2 = this.positionB.lat;
-  const lon2 = this.positionB.lng;
-
-  const toRadians = (degrees: number) => degrees * (Math.PI / 180);
-
-  const dLon = toRadians(lon2 - lon1);
-  const y = Math.sin(dLon) * Math.cos(toRadians(lat2));
-  const x = Math.cos(toRadians(lat1)) * Math.sin(toRadians(lat2)) -
-            Math.sin(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.cos(dLon);
-  const bearing = Math.atan2(y, x);
-
-  // Convert bearing to degrees
-  const bearingDegrees = (bearing * 180 / Math.PI + 360) % 360;
-
-  // Determine cardinal direction
-  const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-  const index = Math.round(bearingDegrees / 45) % 8;
-
-  return directions[index];
-}
-
-
-
-  updateMarker(lat: number, lng: number, index: number, icon: boolean = false, label: string = '') {
-    this.markerOptions[index] = {
-      position: { lat, lng },
-      icon: icon ? this.MARKER_ICON : '',
-      label,
-      draggable: false,
-      zIndex: icon ? 1111 : 0,
-    };
+  
+   
+    this.totalDistance = totalDistance / 1000; // Convert meters to kilometers
+   
   }
+  
+ 
+
+  onSeek(event: MouseEvent): void {
+    const progressBar = event.currentTarget as HTMLElement;
+    const clickX = event.offsetX;
+    const totalWidth = progressBar.clientWidth;
+    const clickedPercentage = Math.max(0, Math.min(100, (clickX / totalWidth) * 100));
+  
+    // Calculate the total time for the entire journey
+    const totalTime = this.destinationArray.controls.reduce((acc, control) => acc + Number(control.get('time')?.value || 0), 0);
+  
+    // Calculate the elapsed time based on the clicked percentage
+    const elapsedTime = (clickedPercentage / 100) * totalTime;
+  
+    // Determine the current segment and segment progress based on the elapsed time
+    let accumulatedTime = 0;
+    this.currentSegment = 0;
+    this.segmentProgress = 0;
+  
+    for (let i = 0; i < this.totalSegments; i++) {
+      const segmentTime = Number(this.destinationArray.at(i).get('time')?.value || 0);
+      if (elapsedTime < accumulatedTime + segmentTime) {
+        this.currentSegment = i;
+        this.segmentProgress = ((elapsedTime - accumulatedTime) / segmentTime) * this.numSteps;
+        break;
+      }
+      accumulatedTime += segmentTime;
+    }
+  
+    // Update markers to reflect changes
+    this.updateMarkers();
+  
+   
+    this.updateDronePosition();
+    this.onPause(); 
+  
+   
+    this.totalProgress = clickedPercentage;
+  
+   
+    this.elapsedTime = elapsedTime;
+    
+  }
+  
+  
 
   onPause() {
     this.simulatePaused = true;
@@ -249,12 +288,18 @@ calculateDirection(): string {
 
   onReset() {
     this.simulatePaused = false;
-    this.latLngForm.reset();
     this.latLngForm.enable();
-    this.initializeMarkers();
+    this.destinationArray.clear();
+    this.addDestination(); // Add initial destination
     this.polyVertices = [];
     this.currentPolylinePath = [];
     this.progressCount = 0;
+    this.currentSegment = 0;
+    this.segmentProgress = 0;
+    this.totalDistance = 0;
+    this.averageSpeed = 0;
+    this.elapsedTime = 0;
     this.droneUpdateSubscription.unsubscribe();
+    this.updateMarkers();
   }
 }

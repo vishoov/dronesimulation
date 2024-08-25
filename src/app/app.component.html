@@ -6,50 +6,63 @@
   <section class="sec-a">
     <form [formGroup]="latLngForm" (ngSubmit)="onSimulate()">
       <div class="sec-a-1">
+        <!-- Source Latitude and Longitude -->
         <div class="alignment">
-        <mat-form-field class="cstm-input-01">
-          <mat-label>Source Latitude</mat-label>
-          <input matInput type="number" formControlName="latitudeA">
-        </mat-form-field>
+          <mat-form-field class="cstm-input-01">
+            <mat-label>Source Latitude</mat-label>
+            <input matInput type="number" formControlName="latitudeA">
+          </mat-form-field>
 
-        <mat-form-field class="cstm-input-01">
-          <mat-label>Source Longitude</mat-label>
-          <input matInput type="number" formControlName="longitudeA">
-        </mat-form-field>
+          <mat-form-field class="cstm-input-01">
+            <mat-label>Source Longitude</mat-label>
+            <input matInput type="number" formControlName="longitudeA">
+          </mat-form-field>
+        </div>
+
+        <!-- Destination Latitude, Longitude, and Time -->
+        <div formArrayName="destinationArray" *ngFor="let destination of destinationArray.controls; let i = index">          <div class="alignment" [formGroupName]="i">
+            <mat-form-field class="cstm-input-01">
+              <mat-label>Destination Latitude</mat-label>
+              <input matInput type="number" formControlName="latitudeB">
+            </mat-form-field>
+
+            <mat-form-field class="cstm-input-01">
+              <mat-label>Destination Longitude</mat-label>
+              <input matInput type="number" formControlName="longitudeB">
+            </mat-form-field>
+
+            <mat-form-field class="cstm-input-01">
+              <mat-label>Time (sec.)</mat-label>
+              <input matInput type="number" formControlName="time">
+            </mat-form-field>
+
+            <!-- Delete Destination Button -->
+            <button mat-icon-button color="warn" (click)="removeDestination(i)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Add Destination Button -->
+        <button mat-button color="primary" (click)="addDestination()">Add Destination</button>
       </div>
-      <div class="alignment">
-        <mat-form-field class="cstm-input-01">
-          <mat-label>Destination Latitude</mat-label>
-          <input matInput type="number" formControlName="latitudeB">
-        </mat-form-field>
 
-        <mat-form-field class="cstm-input-01">
-          <mat-label>Destination Longitude</mat-label>
-          <input matInput type="number" formControlName="longitudeB">
-        </mat-form-field>
-
-       
-      </div>
-      <div class="alignment">
-      <mat-form-field class="cstm-input-01">
-        <mat-label>Time (sec.)</mat-label>
-        <input matInput type="number" formControlName="time">
-      </mat-form-field>
-      <button mat-fab class="simulate-btn" extended color="primary" type="submit" [disabled]="!latLngForm.valid">
-        Simulate
-      </button>
-    </div>
-      </div>
-
+      <!-- Simulate, Pause, Resume, Reset Buttons -->
       <div class="sec-a-2">
+        <button mat-fab class="simulate-btn" extended color="primary" type="submit" [disabled]="latLngForm.invalid">
+          Simulate
+        </button>
+
         <button mat-raised-button color="primary" 
           [disabled]="!latLngForm.disabled || simulatePaused || progressCount >= 100"
           (click)="onPause()">Pause
         </button>
+
         <button mat-raised-button color="primary" 
           [disabled]="!latLngForm.disabled || !simulatePaused" 
           (click)="onResume()">Resume
         </button>
+
         <button mat-raised-button color="primary" 
           [disabled]="!latLngForm.disabled" 
           (click)="onReset()">Reset
@@ -58,19 +71,19 @@
     </form>
   </section>
 
+  <!-- Google Maps Section -->
   <section class="sec-gmap">
     <div class="progress-grp">
       <mat-progress-bar mode="determinate"
-                        [value]="progressCount"
+                        [value]="totalProgress"
                         class="cstm-progress-bar"
                         (click)="onSeek($event)">
       </mat-progress-bar>
-      <span class="progress-count">{{progressCount}}%</span>
+      <span class="progress-count">{{totalProgress | number:'1.0-0'}}%</span>
     </div>
 
     <div *ngIf="apiLoaded | async">
-      <google-map width="90%" [options]="mainOptions"
-        >
+      <google-map width="90%" [options]="mainOptions">
         <map-marker *ngFor="let markerPosition of markerOptions"
           [options]="markerPosition">
         </map-marker>
@@ -78,13 +91,21 @@
       </google-map>
     </div>
   </section>
-
- 
 </div>
+
+<!-- Distance Covered Section -->
 <section class="sec-metrics">
-  <div class="distance-container">
+  <div class="distance-container" style="margin: 5px;">
     <h2>Distance Covered</h2>
-    <div class="distance-value" id="distance-value">0.00</div>
+    <div class="distance-value" id="distance-value">{{ totalDistance | number:'1.2-2' }}</div>
     <div class="distance-units">km</div>
   </div>
+
+  <div class="distance-container" style="margin: 5px;">
+    <h2>Time Elapsed</h2>
+    <div class="distance-value" id="distance-value">{{ elapsedTime | number: '1.0-2' }}</div>
+    <div class="distance-units">seconds</div>
+  </div>
 </section>
+
+
