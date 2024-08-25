@@ -27,6 +27,10 @@ Check out the live app here: [Drone Simulation App](https://dronesimulation-seve
   - Show total distance covered in kilometers. 📏
   - Display elapsed time in seconds. ⏱️
 
+- **File Upload for Destination Data** 📁:
+  - Upload Excel files (.xlsx) containing destination data.
+  - Automatically parse and populate destination fields with latitude, longitude, and travel time from the uploaded file. 📊
+
 ## Tech Stack
 
 - **Frontend**: 
@@ -39,6 +43,7 @@ Check out the live app here: [Drone Simulation App](https://dronesimulation-seve
 
 - **Utilities**:
   - RxJS 🧩
+  - `xlsx` library for parsing Excel files 📂
 
 ## Approach
 
@@ -60,5 +65,10 @@ Check out the live app here: [Drone Simulation App](https://dronesimulation-seve
 
 5. **Distance Calculation** 📏:
    - Calculate and display the distance covered by the drone in real-time using Google Maps geometry services. 🗺️
+
+6. **File Upload Functionality** 📁:
+   - Implement file upload to handle Excel files containing destination data.
+   - Parse the uploaded file using the `xlsx` library.
+   - Populate form fields with the data from the Excel file, enabling easy addition of multiple destinations.
 
 Feel free to explore, contribute, and provide feedback! Your input is highly valued. 🚀💬
