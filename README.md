@@ -6,6 +6,9 @@ Welcome to the **Drone Simulation App**! 🎉 This web-based application lets yo
 
 Check out the live app here: [Drone Simulation App](https://dronesimulation-seven.vercel.app/) 🌐
 
+
+Sample Input for file upload : [input.xlsx](https://docs.google.com/spreadsheets/d/1Iuy6kvQAkjEK4r_9kEXACraD1_iYL6hA6OpgNHdwzqQ/edit?usp=sharing)
+
 ## Functionalities
 
 - **Add and Manage Destinations** 🌍📍:
