@@ -4,6 +4,7 @@ import { Observable, of, interval, Subscription } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { FormArray, FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { environment } from '../environments/environment';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-root',
@@ -11,6 +12,9 @@ import { environment } from '../environments/environment';
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit, OnDestroy {
+
+
+  // Initialize the variables
   destinationArray: FormArray = this.formBuilder.array([]);
 
   totalDistance: number = 0;
@@ -57,6 +61,7 @@ export class AppComponent implements OnInit, OnDestroy {
   markerOptions: google.maps.MarkerOptions[] = [];
   currentPolylinePath: google.maps.LatLngLiteral[] = [];
 
+  // Initialize the component with the HttpClient and FormBuilder
   constructor(private httpClient: HttpClient, private formBuilder: FormBuilder) {
     this.apiLoaded = this.httpClient.jsonp(`${this.G_MAP_API}`, 'callback')
       .pipe(
@@ -73,6 +78,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.destinationArray = this.latLngForm.get('destinationArray') as FormArray;
   }
 
+  // Initialize the form with the source and destination coordinates
   ngOnInit() {
     this.latLngForm = this.formBuilder.group({
       latitudeA: [null, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
@@ -83,7 +89,9 @@ export class AppComponent implements OnInit, OnDestroy {
     this.destinationArray = this.latLngForm.get('destinationArray') as FormArray;
     this.addDestination(); // Add initial destination
   }
+
   
+  // Create a new destination form group
   createDestination(): FormGroup {
     return this.formBuilder.group({
       latitudeB: [null, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
@@ -91,6 +99,8 @@ export class AppComponent implements OnInit, OnDestroy {
       time: [null, [Validators.required, Validators.min(0)]]
     });
   }
+  
+
   
   ngOnDestroy() {
     this.droneUpdateSubscription.unsubscribe();
@@ -102,6 +112,68 @@ export class AppComponent implements OnInit, OnDestroy {
   removeDestination(index: number) {
     this.destinationArray.removeAt(index);
   }
+
+// On file change event to read the uploaded Excel file
+
+  onFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      const reader = new FileReader();
+
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        const data = new Uint8Array((e.target as FileReader).result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        this.parseExcelData(jsonData);
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+  }
+
+
+// Parse the Excel data and populate the form with the source and destination coordinates
+  parseExcelData(data: any[]) {
+    this.destinationArray.clear();
+
+    if (data.length > 0) {
+        // The first row contains the source coordinates
+        const firstRow = data[0];
+        if (firstRow.length >= 2) {
+            this.latLngForm.patchValue({
+                latitudeA: firstRow[0],
+                longitudeA: firstRow[1]
+            });
+        }
+
+        // Subsequent rows contain destinations
+        for (let rowIndex = 1; rowIndex < data.length; rowIndex++) {
+            const row = data[rowIndex];
+
+            // Check Row validity
+            if (row.length >= 4) {
+                // Extract latitude, longitude, and time from the row (ignoring the first column which is the label)
+                const latitudeB = row[1];
+                const longitudeB = row[2];
+                const time = row[3];
+
+                // Add to destination array
+                this.destinationArray.push(this.formBuilder.group({
+                    latitudeB: [latitudeB, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
+                    longitudeB: [longitudeB, [Validators.required, Validators.pattern(/^-?\d+(\.\d+)?$/)]],
+                    time: [time, [Validators.required, Validators.min(0)]]
+                }));
+            }
+        }
+    }
+}
+
+
+// Simulate the drone movement based on the given coordinates and time
 
   onSimulate() {
     if (!this.latLngForm.valid) {
@@ -142,6 +214,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   
 
+// Start the drone updates based on the time interval calculated from the total time and number of steps per segment 
+
   startDroneUpdates() {
    
     this.droneUpdateSubscription.unsubscribe();
@@ -170,6 +244,7 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
   
+  // Update the drone position based on the current segment and segment progress
 
   updateDronePosition(): void {
     const startPos = this.destinations[this.currentSegment];
@@ -201,7 +276,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
 
-
+// Log the distance traveled by the drone
 
   logDistance(position: google.maps.LatLngLiteral) {
     // Initialize total distance to 0
@@ -234,6 +309,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   
  
+// Seek to a specific point in the simulation
 
   onSeek(event: MouseEvent): void {
     const progressBar = event.currentTarget as HTMLElement;
@@ -280,12 +356,14 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   
   
+  // Pause the simulation
 
   onPause() {
     this.simulatePaused = true;
     this.droneUpdateSubscription.unsubscribe();
   }
 
+  // Resume the simulation
   onResume() {
     if (!this.simulatePaused) {
       return;
@@ -298,6 +376,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.startDroneUpdates();
   }
 
+
+  // Reset the simulation
   onReset() {
     this.simulatePaused = false;
     this.latLngForm.enable();

@@ -47,7 +47,15 @@
         <button mat-button color="primary" (click)="addDestination()">Add Destination</button>
       </div>
 
-      <!-- Simulate, Pause, Resume, Reset Buttons -->
+      <div class="file-upload-container">
+        <input type="file" id="fileInput" (change)="onFileChange($event)" />
+        <label for="fileInput">Upload File</label>
+      </div>
+      
+      
+      
+
+
       <div class="sec-a-2">
         <button mat-fab class="simulate-btn" extended color="primary" type="submit" [disabled]="latLngForm.invalid">
           Simulate

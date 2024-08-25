@@ -97,3 +97,33 @@
         }
     }
 }
+
+input[type="file"] {
+    margin:10px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    cursor: pointer;
+    
+
+    /* For WebKit browsers (Chrome, Safari) */
+    ::-webkit-file-upload-button {
+        border: none;
+        color: #fff;
+        background: #007bff;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    /* For Mozilla browsers (Firefox) */
+    ::-moz-file-upload-button {
+        border: none;
+        color: #fff;
+        background: #007bff;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+}
