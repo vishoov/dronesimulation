@@ -143,17 +143,22 @@ export class AppComponent implements OnInit, OnDestroy {
   
 
   startDroneUpdates() {
+   
     this.droneUpdateSubscription.unsubscribe();
-    this.progressCount = 0;
-    this.currentSegment = 0;
-    this.segmentProgress = 0;
   
+   
+    this.time = (this.destinationArray.controls.reduce((acc, control) => acc + Number(control.get('time')?.value || 0), 0) * 1000) / (this.numSteps * this.totalSegments);
+  
+   
+    this.progressCount = this.progressCount || 0;
+  
+    
     this.droneUpdateSubscription = interval(this.time).subscribe(() => {
       if (this.currentSegment < this.totalSegments) {
         this.updateDronePosition();
         this.segmentProgress++;
         this.progressCount++;
-        this.elapsedTime += this.time/1000; // Convert milliseconds to seconds
+        this.elapsedTime += this.time / 1000;
   
         if (this.segmentProgress >= this.numSteps) {
           this.currentSegment++;
@@ -269,6 +274,8 @@ export class AppComponent implements OnInit, OnDestroy {
   
    
     this.elapsedTime = elapsedTime;
+
+    
     
   }
   
@@ -280,10 +287,15 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onResume() {
-    if (this.simulatePaused) {
-      this.simulatePaused = false;
-      this.startDroneUpdates();
+    if (!this.simulatePaused) {
+      return;
     }
+  
+    this.simulatePaused = false;
+  
+    // Start or resume the drone simulation from where it left off
+    this.droneUpdateSubscription.unsubscribe();
+    this.startDroneUpdates();
   }
 
   onReset() {
