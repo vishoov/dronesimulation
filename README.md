@@ -1,20 +1,64 @@
-# Drone Simulator
+# Drone Simulation App 🚁🌍
 
-#Deployed link
-https://dronesimulation-seven.vercel.app/
+## Project Description
 
+Welcome to the **Drone Simulation App**! 🎉 This web-based application lets you simulate your drone's journey on a map. With features to add multiple destinations, control the simulation, and visualize real-time movement, it's perfect for exploring drone paths and flight dynamics. 📍✨
 
-**Project Summary :**
-This App simulates the drone motion on Google Maps based on user-provided information. Static/hardcoded start position marked for drone in the map, then move the following drone to the latitude and longitude provided by the user. The movement should take x seconds to perform. X will be configured by the user.
+Check out the live app here: [Drone Simulation App](https://dronesimulation-seven.vercel.app/) 🌐
 
-*Features*:
-* Display world maps in your app background, npm package used is @angular/google-maps for the same.
-* Take latitude,longitude and time as input from the user.
-* When a user clicks on the 'simulate' button, used Google map marker to display the drone and draw the entire expected path. Keep updating the drone position with time and also update the progress over the map.
-* Functionality where user can used to 'pause', 'resume' or 'reset' the simulation.
-* User can also seek the progress of the drone path using the progress bar
+## Functionalities
 
+- **Add and Manage Destinations** 🌍📍:
+  - Input multiple destination points with latitude, longitude, and travel time. 
+  - Dynamically add ➕ or remove ➖ destinations. 
 
+- **Simulate Drone Movement** 🚁:
+  - Start the simulation from your input coordinates. 🌐
+  - Watch the drone’s path unfold on Google Maps in real-time. 🗺️
+  - Get continuous updates on the drone’s position as it moves. 🔄
 
-"# dronesimulation" 
-"# dronesimulation" 
+- **Control Simulation** 🎛️:
+  - **Pause** ⏸️: Stop the simulation whenever needed.
+  - **Resume** ▶️: Continue from where it was paused.
+  - **Reset** 🔄: Restart the simulation with initial settings.
+  - **Seek** ⏩: Jump to any point in the simulation using a progress bar. 📊
+
+- **Metrics Display** 📈:
+  - Show total distance covered in kilometers. 📏
+  - Display elapsed time in seconds. ⏱️
+
+## Tech Stack
+
+- **Frontend**: 
+  - Angular 🅰️
+  - Angular Material 🎨
+  - Google Maps API 🗺️
+
+- **Styling**:
+  - SCSS 🎨
+
+- **Utilities**:
+  - RxJS 🧩
+
+## Approach
+
+1. **Form Management** 📋:
+   - Use Angular Reactive Forms to handle user inputs for the drone simulation.
+   - Ensure accurate data entry with validations for latitude, longitude, and time. ✅
+
+2. **Simulation Logic** 🧮:
+   - Calculate drone movement based on user-defined destinations and times.
+   - Update the drone’s position periodically using RxJS `interval`. ⏲️
+
+3. **Map Integration** 🌐:
+   - Integrate Google Maps for visualizing the drone’s path and markers. 📍
+   - Update markers and polyline to reflect the drone’s current location. 🗺️
+
+4. **Control Mechanisms** 🛠️:
+   - Implement pause ⏸️, resume ▶️, and reset 🔄 functionalities to manage the simulation.
+   - Add a progress bar 📊 to seek specific points in the simulation. ⏩
+
+5. **Distance Calculation** 📏:
+   - Calculate and display the distance covered by the drone in real-time using Google Maps geometry services. 🗺️
+
+Feel free to explore, contribute, and provide feedback! Your input is highly valued. 🚀💬
